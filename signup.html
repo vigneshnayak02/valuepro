@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Supervaluepro</title>
+    <link rel="icon" type="image/jpeg" href="images/logo.jpeg">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 8rem auto;
+            padding: 2rem;
+            background: var(--background-light);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+        }
+
+        .dark-mode .auth-container {
+            background: #1a263a;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .auth-form h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-form input {
+            padding: 0.8rem 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+
+        .dark-mode .auth-form input {
+            background: #2c3a4e;
+            border-color: #334155;
+            color: var(--text-dark);
+        }
+
+        .auth-form button {
+            padding: 0.8rem 1rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .auth-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .auth-form p {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .auth-form p a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-form p a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .password-requirements {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: -0.5rem;
+        }
+
+        .dark-mode .password-requirements {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="images/logo.jpeg" alt="Supervaluepro Logo" class="logo-image">
+                <h1>Supervaluepro</h1>
+            </div>
+            <div class="nav-controls">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search products...">
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="nav-buttons">
+                    <button id="themeToggle" class="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="wishlistBtn" class="theme-toggle">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button id="profileBtn" class="theme-toggle">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="auth-container">
+            <form id="signupForm" class="auth-form">
+                <h2>Create an Account</h2>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Password" required>
+                <p class="password-requirements">Password must be at least 6 characters long</p>
+                <button type="submit">Sign Up</button>
+                <p>Already have an account? <a href="login.html">Login</a></p>
+                <p id="signupError" class="error-message"></p>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section about">
+                <h3>About Us</h3>
+                <p>Your trusted source for product recommendations and reviews.</p>
+            </div>
+            <div class="footer-section contact">
+                <h3>Connect With Us</h3>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/tirupati.islavath" class="social-link"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.instagram.com/viddu.____?igsh=MTdhaHl2OWpjcmtncQ==" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 supervaluepro. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html> 

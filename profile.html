@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - SuperValue Pro</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 2rem;
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .profile-actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-logout {
+            background: var(--error-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html">SuperValue Pro</a>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="wishlist.html">Wishlist</a>
+                <a href="profile.html" class="active">Profile</a>
+                <button id="themeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="profile-container">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="userAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h1 id="userName">Loading...</h1>
+                        <p id="userEmail">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <h3 id="wishlistCount">0</h3>
+                        <p>Items in Wishlist</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="joinedDate">Loading...</h3>
+                        <p>Member Since</p>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='wishlist.html'">
+                        <i class="fas fa-heart"></i> View Wishlist
+                    </button>
+                    <button class="btn btn-logout" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script>
+        // Initialize profile when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!currentUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Update user info
+            document.getElementById('userName').textContent = currentUser.displayName || 'User';
+            document.getElementById('userEmail').textContent = currentUser.email;
+            
+            // Update avatar with first letter of name
+            const avatar = document.getElementById('userAvatar');
+            const firstLetter = (currentUser.displayName || 'U')[0].toUpperCase();
+            avatar.innerHTML = `<span>${firstLetter}</span>`;
+
+            // Update member since date
+            const joinedDate = new Date(currentUser.metadata.creationTime);
+            document.getElementById('joinedDate').textContent = joinedDate.toLocaleDateString();
+
+            // Update wishlist count
+            const wishlistCount = Object.keys(userWishlist || {}).length;
+            document.getElementById('wishlistCount').textContent = wishlistCount;
+        });
+    </script>
+</body>
+</html> 

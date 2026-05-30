@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>ValuePro — Premium Products at Unbeatable Prices</title>
+    <meta name="description"
+        content="Discover curated product recommendations, top-rated items, and unbeatable deals on ValuePro.">
+    <link rel="icon" type="image/jpeg" href="images/valuepro-logo.jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Quick-hide disabled sections to prevent skeleton flashing -->
+    <script>
+        try {
+            const savedVis = localStorage.getItem('visibilitySettings');
+            if (savedVis) {
+                const vis = JSON.parse(savedVis);
+                let style = '';
+                if (vis.featuredProducts === false) style += '#featured-products { display: none !important; }\n';
+                if (vis.allProducts === false) style += '#all-products { display: none !important; }\n';
+                if (vis.myShop === false) style += '#my-shop { display: none !important; }\n';
+                if (style) {
+                    const styleEl = document.createElement('style');
+                    styleEl.textContent = style;
+                    document.head.appendChild(styleEl);
+                }
+            }
+        } catch (e) { }
+    </script>
+</head>
+
+<body class="light-mode">
+    <header>
+        <nav>
+            <div class="logo">
+                <img src="images/valuepro-logo.jpeg" alt="Supervaluepro Logo" class="logo-image">
+                <h1>value products</h1>
+            </div>
+            <div class="nav-controls">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search products...">
+                    <button id="voiceSearchBtn" class="voice-btn" aria-label="Voice Search" title="Voice Search">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="nav-buttons">
+                    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="wishlistBtn" class="theme-toggle" aria-label="Wishlist">
+                        <i class="fas fa-heart"></i>
+                        <span class="wishlist-count">0</span>
+                    </button>
+                    <div class="profile-container">
+                        <button class="profile-button" aria-label="Profile" onclick="toggleProfileDropdown(event)">
+                            <i class="fas fa-user"></i>
+                        </button>
+
+                        <!-- Dropdown for logged out state -->
+                        <div class="profile-dropdown" id="logged-out-dropdown">
+                            <div class="dropdown-header">
+                                <p class="welcome-text">Welcome to ValuePro</p>
+                            </div>
+                            <div class="dropdown-buttons mobile-only"
+                                style="border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('myShopFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-store"></i> My Shop
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('allProductsFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-boxes"></i> All Products
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('featuredFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-star"></i> Featured
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('themeToggle').click();">
+                                    <i class="fas fa-moon"></i> Toggle Theme
+                                </button>
+                            </div>
+                            <div class="dropdown-buttons">
+                                <button class="dropdown-button login-signup-btn" onclick="openModal('authModal')">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Login / Signup
+                                </button>
+                                <button class="dropdown-button about-us-btn" onclick="scrollToAboutUs()">
+                                    <i class="fas fa-info-circle"></i>
+                                    About Us
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Simplified dropdown for logged in state -->
+                        <div class="profile-dropdown" id="logged-in-dropdown" style="display: none;">
+                            <div class="user-info">
+                                <div class="user-avatar"></div>
+                                <div class="user-details">
+                                    <div class="user-name"></div>
+                                    <div class="user-email"></div>
+                                </div>
+                            </div>
+                            <div class="dropdown-buttons mobile-only"
+                                style="border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('myShopFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-store"></i> My Shop
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('allProductsFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-boxes"></i> All Products
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('featuredFloatingBtn').click(); toggleProfileDropdown(event);">
+                                    <i class="fas fa-star"></i> Featured
+                                </button>
+                                <button class="dropdown-button"
+                                    onclick="document.getElementById('themeToggle').click();">
+                                    <i class="fas fa-moon"></i> Toggle Theme
+                                </button>
+                            </div>
+                            <div class="dropdown-buttons">
+                                <div class="settings-container">
+                                    <button class="dropdown-button settings-btn"
+                                        style="justify-content: space-between;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <i class="fas fa-cog"></i>
+                                            Settings
+                                        </div>
+                                        <i class="fas fa-chevron-down chevron-icon"
+                                            style="font-size: 0.75rem; transition: transform 0.3s ease;"></i>
+                                    </button>
+                                    <div class="settings-dropdown">
+                                        <button class="settings-option about-us-btn" onclick="scrollToAboutUs()">
+                                            <i class="fas fa-info-circle"></i>
+                                            About Us
+                                        </button>
+                                        <button class="settings-option delete-account">
+                                            <i class="fas fa-trash-alt"></i>
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="dropdown-button logout-btn">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Auth Modals -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('authModal')">&times;</span>
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+                <h2>Login</h2>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit">Login</button>
+                <p>Don't have an account? <a href="#" onclick="showSignup()">Sign Up</a></p>
+                <p id="loginError" class="error-message"></p>
+            </form>
+            <!-- Signup Form -->
+            <form id="signupForm" class="auth-form" style="display: none;">
+                <h2>Sign Up</h2>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Password (min. 6 chars)" required>
+                <button type="submit">Sign Up</button>
+                <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+                <p id="signupError" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal">
+        <div class="modal-content wishlist-content">
+            <span class="close-btn" onclick="closeModal('wishlistModal')">&times;</span>
+            <h2>My Wishlist</h2>
+            <div id="wishlistItemsContainer" class="products-grid">
+                <!-- Wishlist items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Email Modal -->
+    <div id="editEmailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('editEmailModal')">&times;</span>
+            <h2>Edit Email</h2>
+            <form id="editEmailForm" class="auth-form">
+                <div class="form-group">
+                    <label for="currentEmail">Current Email</label>
+                    <input type="email" id="currentEmail" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="newEmail">New Email</label>
+                    <input type="email" id="newEmail" placeholder="Enter new email" required>
+                </div>
+                <div class="form-group">
+                    <label for="emailPassword">Password</label>
+                    <input type="password" id="emailPassword" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="submit-btn">Update Email</button>
+                <p id="editEmailError" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="deleteAccountModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('deleteAccountModal')">&times;</span>
+            <h2>Delete Account</h2>
+            <div class="warning-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>This action cannot be undone. All your data will be permanently deleted.</p>
+            </div>
+            <form id="deleteAccountForm" class="auth-form">
+                <div class="form-group">
+                    <label for="deletePassword">Enter your password to confirm</label>
+                    <input type="password" id="deletePassword" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="delete-btn">Delete Account</button>
+                <p id="deleteAccountError" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Filter Drawer Overlay -->
+    <div class="filter-overlay" id="filterOverlay"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section" id="heroContainer"
+            style="min-height: 400px; background: rgba(0,0,0,0.03); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 1rem 0;">
+            <div class="skeleton-hero"
+                style="width: 100%; height: 100%; position: absolute; inset: 0; animation: pulseSkeleton 1.5s infinite; background: rgba(0,0,0,0.05);">
+            </div>
+            <div style="position: relative; z-index: 1; text-align: center; width: 80%; max-width: 600px;">
+                <div
+                    style="height: 40px; width: 60%; background: rgba(0,0,0,0.08); margin: 0 auto 1rem; border-radius: 8px; animation: pulseSkeleton 1.5s infinite;">
+                </div>
+                <div
+                    style="height: 20px; width: 40%; background: rgba(0,0,0,0.08); margin: 0 auto 2rem; border-radius: 6px; animation: pulseSkeleton 1.5s infinite;">
+                </div>
+                <div
+                    style="height: 50px; width: 140px; background: rgba(0,0,0,0.08); margin: 0 auto; border-radius: 25px; animation: pulseSkeleton 1.5s infinite;">
+                </div>
+            </div>
+            <style>
+                .dark-mode #heroContainer {
+                    background: rgba(255, 255, 255, 0.03) !important;
+                }
+
+                .dark-mode .skeleton-hero,
+                .dark-mode #heroContainer div>div {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                }
+            </style>
+        </section>
+
+        <!-- Filter Bar -->
+        <div class="filter-scrollbar" id="filterBar">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label>Price</label>
+                    <select id="filterPrice">
+                        <option value="">All</option>
+                        <option value="low">Low to High</option>
+                        <option value="high">High to Low</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Brand</label>
+                    <select id="filterBrand">
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Discount</label>
+                    <select id="filterDiscount">
+                        <option value="">All</option>
+                        <option value="10">10% or more</option>
+                        <option value="20">20% or more</option>
+                        <option value="30">30% or more</option>
+                        <option value="50">50% or more</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Rating</label>
+                    <select id="filterRating">
+                        <option value="">All</option>
+                        <option value="4">4+ stars</option>
+                        <option value="3">3+ stars</option>
+                        <option value="2">2+ stars</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Featured</label>
+                    <div class="featured-toggle">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterFeatured">
+                            <span class="custom-checkbox"></span>
+                            <span class="toggle-label">Show Featured</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-buttons-container">
+                    <button id="resetFiltersBtn" class="reset-filters-btn">
+                        <i class="fas fa-times"></i> Reset Filters
+                    </button>
+                    <button id="applyFiltersBtn" class="apply-filters-btn">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Filter Toggle Button -->
+        <button class="mobile-filter-toggle" id="mobileFilterToggle">
+            <i class="fas fa-sliders-h"></i> Filters
+        </button>
+
+        <section id="featured-products" class="products-section">
+            <div id="featuredProductsContainer" class="products-grid">
+                <!-- Skeleton Loader -->
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+            </div>
+        </section>
+
+        <section id="all-products" class="products-section">
+            <h2>Products from apps</h2>
+            <div id="productsContainer" class="products-grid">
+                <!-- Skeleton Loader -->
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+            </div>
+        </section>
+
+        <section id="my-shop" class="products-section">
+            <h2>Our store</h2>
+            <div id="myShopContainer" class="products-grid">
+                <!-- Skeleton Loader -->
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+                <div class="product-card skeleton-card" style="min-height: 350px;"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section about">
+                <h3>About Us</h3>
+                <p>Your trusted source for product recommendations and reviews.</p>
+            </div>
+            <div id="contact-section" class="footer-section contact">
+                <h3>Connect With Us</h3>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/tirupati.islavath" class="social-link" target="_blank"><i
+                            class="fab fa-facebook"></i></a>
+                    <a href="https://twitter.com/supervaluepro" class="social-link" target="_blank"><i
+                            class="fab fa-twitter"></i></a>
+                    <a href="https://www.instagram.com/viddu.____?igsh=MTdhaHl2OWpjcmtncQ==" class="social-link"
+                        target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.linkedin.com/company/supervaluepro" class="social-link" target="_blank"><i
+                            class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 valuepro. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Floating Navigation Buttons -->
+    <div class="floating-nav-buttons">
+        <button id="myShopFloatingBtn" class="floating-btn" title="Go to My Shop">
+            <i class="fas fa-store"></i>
+        </button>
+        <button id="allProductsFloatingBtn" class="floating-btn" title="Go to All Products">
+            <i class="fas fa-boxes"></i>
+        </button>
+        <button id="featuredFloatingBtn" class="floating-btn" title="Go to Featured Products">
+            <i class="fas fa-star"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <a href="#" class="nav-item active" id="navHome"
+            onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="nav-item" id="navSearch"
+            onclick="document.querySelector('.search-bar input').focus(); return false;">
+            <i class="fas fa-search"></i>
+            <span>Search</span>
+        </a>
+        <a href="#" class="nav-item" id="navWishlist"
+            onclick="document.getElementById('wishlistBtn').click(); return false;">
+            <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-heart"></i>
+                <span class="wishlist-count">0</span>
+            </div>
+            <span>Wishlist</span>
+        </a>
+        <a href="#" class="nav-item" id="navProfile" onclick="toggleProfileDropdown(event); return false;">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Mobile Filter Drawer Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterToggle = document.getElementById('mobileFilterToggle');
+            const filterBar = document.getElementById('filterBar');
+            const filterOverlay = document.getElementById('filterOverlay');
+
+            if (filterToggle && filterBar && filterOverlay) {
+                filterToggle.addEventListener('click', function () {
+                    filterBar.classList.toggle('drawer-open');
+                    filterOverlay.classList.toggle('active');
+                    document.body.classList.toggle('filter-drawer-open');
+                });
+
+                filterOverlay.addEventListener('click', function () {
+                    filterBar.classList.remove('drawer-open');
+                    filterOverlay.classList.remove('active');
+                    document.body.classList.remove('filter-drawer-open');
+                });
+
+                // Close drawer when apply/reset is clicked
+                const applyBtn = document.getElementById('applyFiltersBtn');
+                const resetBtn = document.getElementById('resetFiltersBtn');
+                [applyBtn, resetBtn].forEach(btn => {
+                    if (btn) btn.addEventListener('click', () => {
+                        filterBar.classList.remove('drawer-open');
+                        filterOverlay.classList.remove('active');
+                        document.body.classList.remove('filter-drawer-open');
+                    });
+                });
+            }
+        });
+    </script>
+
+    <!-- Advanced Search Overlays -->
+    <!-- Voice Search Overlay -->
+    <div id="voiceSearchOverlay" class="search-overlay">
+        <div class="search-overlay-content">
+            <button id="closeVoiceSearch" class="close-overlay-btn"><i class="fas fa-times"></i></button>
+            <div class="mic-container">
+                <div class="mic-pulse" id="micPulse"></div>
+                <div class="mic-icon-wrapper">
+                    <i class="fas fa-microphone"></i>
+                </div>
+            </div>
+            <h2 id="voiceSearchStatus">Listening...</h2>
+            <p id="voiceSearchTranscript">Speak now to search products</p>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

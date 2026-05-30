@@ -1,0 +1,595 @@
+import { 
+    db, auth, ref, onValue, set, remove, // Added auth, remove
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, // Added Auth functions and updateProfile
+    getDatabase, getAuth // Added getDatabase and getAuth
+} from './firebase-config.js';
+
+// DOM Elements
+const searchInput = document.getElementById('searchInput');
+const categoryFilter = document.getElementById('categoryFilter');
+const themeToggle = document.getElementById('themeToggle');
+const featuredProductsContainer = document.getElementById('featuredProductsContainer');
+const productsContainer = document.getElementById('productsContainer');
+const wishlistBtn = document.getElementById('wishlistBtn');
+const profileBtn = document.getElementById('profileBtn');
+const authModal = document.getElementById('authModal');
+const wishlistModal = document.getElementById('wishlistModal');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const loginErrorEl = document.getElementById('loginError');
+const signupErrorEl = document.getElementById('signupError');
+const wishlistItemsContainer = document.getElementById('wishlistItemsContainer');
+
+// Firebase References
+const productsRef = ref(db, 'products');
+const settingsRef = ref(db, 'settings');
+
+// App State
+let currentUser = null;
+let userWishlist = {}; // Store local cache of user's wishlist {productId: true}
+let allProductsData = {}; // Cache all products for wishlist display {productId: productData}
+
+// Initialize Firebase
+const db = getDatabase();
+const auth = getAuth();
+
+// --- Modal Functions --- 
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        // Clear error messages when closing auth modal
+        if (modalId === 'authModal') {
+            loginErrorEl.textContent = '';
+            signupErrorEl.textContent = '';
+        }
+    }
+}
+
+function showLogin() {
+    loginForm.style.display = 'block';
+    signupForm.style.display = 'none';
+    loginErrorEl.textContent = '';
+    signupErrorEl.textContent = '';
+}
+
+function showSignup() {
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'block';
+    loginErrorEl.textContent = '';
+    signupErrorEl.textContent = '';
+}
+
+// Make modal functions globally accessible from HTML onclick
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showLogin = showLogin;
+window.showSignup = showSignup;
+
+// Close modal if clicked outside of content
+window.onclick = function(event) {
+    if (event.target == authModal) {
+        closeModal('authModal');
+    }
+    if (event.target == wishlistModal) {
+        closeModal('wishlistModal');
+    }
+}
+// --- End Modal Functions ---
+
+// --- Authentication Functions --- 
+function handleAuthStateChange(user) {
+    currentUser = user;
+    const profileBtn = document.getElementById('profileBtn');
+    const authModal = document.getElementById('authModal');
+    
+    if (user) {
+        console.log('User logged in:', user.uid);
+        // Update profile button to show user name
+        if (profileBtn) {
+            profileBtn.innerHTML = `
+                <i class="fas fa-user"></i>
+                <span>${user.displayName || user.email.split('@')[0]}</span>
+            `;
+            profileBtn.onclick = handleLogout;
+        }
+        // Close auth modal if open
+        if (authModal) {
+            closeModal('authModal');
+        }
+        // Fetch user's wishlist
+        fetchUserWishlist(user.uid);
+    } else {
+        console.log('User logged out');
+        // Reset profile button to login
+        if (profileBtn) {
+            profileBtn.innerHTML = '<i class="fas fa-user"></i> Login';
+            profileBtn.onclick = () => {
+                openModal('authModal');
+                showLogin();
+            };
+        }
+        // Clear wishlist
+        userWishlist = {};
+        updateAllWishlistIcons();
+    }
+}
+
+function handleLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    loginErrorEl.textContent = ''; // Clear previous error
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+            // Signed in 
+            console.log("Login successful");
+            // Auth state change listener will handle UI updates
+        })
+        .catch((error) => {
+            console.error("Login error:", error);
+            loginErrorEl.textContent = error.message; 
+        });
+}
+
+async function handleSignup(event) {
+    event.preventDefault();
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const name = document.getElementById('signupName').value;
+    const signupErrorEl = document.getElementById('signupError');
+
+    try {
+        const userCredential = await createUserWithPassword(auth, email, password);
+        // Update user profile with name
+        await updateProfile(userCredential.user, {
+            displayName: name
+        });
+        console.log('Signup successful');
+        // Auth state change listener will handle UI updates
+    } catch (error) {
+        console.error('Signup error:', error);
+        signupErrorEl.textContent = error.message;
+    }
+}
+
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        signOut(auth).then(() => {
+            console.log('User logged out');
+            // The handleAuthStateChange will handle the UI updates
+        }).catch((error) => {
+            console.error('Error logging out:', error);
+        });
+    }
+}
+// --- End Authentication Functions --- 
+
+// --- Wishlist Functions --- 
+async function fetchUserWishlist(userId) {
+    const wishlistRef = ref(db, `users/${userId}/wishlist`);
+    onValue(wishlistRef, (snapshot) => {
+        userWishlist = snapshot.val() || {};
+        console.log('User wishlist fetched:', userWishlist);
+        updateAllWishlistIcons(); // Update icons after fetching wishlist
+    }, (error) => {
+         console.error("Error fetching wishlist:", error);
+         userWishlist = {}; // Reset on error
+    });
+}
+
+async function toggleWishlist(productId) {
+    if (!currentUser) {
+        openModal('authModal'); // Prompt login if not logged in
+        return;
+    }
+
+    const userId = currentUser.uid;
+    const wishlistItemRef = ref(db, `users/${userId}/wishlist/${productId}`);
+    const isInWishlist = !!userWishlist[productId];
+
+    try {
+        if (isInWishlist) {
+            // Remove from wishlist
+            await remove(wishlistItemRef);
+            delete userWishlist[productId]; // Update local cache
+            console.log(`Product ${productId} removed from wishlist`);
+        } else {
+            // Add to wishlist
+            await set(wishlistItemRef, true);
+            userWishlist[productId] = true; // Update local cache
+            console.log(`Product ${productId} added to wishlist`);
+        }
+        updateWishlistIcon(productId, !isInWishlist); // Update specific icon
+    } catch (error) {
+        console.error("Error updating wishlist:", error);
+        // Optionally show a user-facing error message
+    }
+}
+
+function updateWishlistIcon(productId, isWishlisted) {
+    const buttons = document.querySelectorAll(`.wishlist-button[data-product-id="${productId}"]`);
+    buttons.forEach(button => {
+        const icon = button.querySelector('i');
+        if (isWishlisted) {
+            icon.classList.remove('far');
+            icon.classList.add('fas', 'wishlisted');
+        } else {
+            icon.classList.remove('fas', 'wishlisted');
+            icon.classList.add('far');
+        }
+    });
+}
+
+function updateAllWishlistIcons() {
+    const allButtons = document.querySelectorAll('.wishlist-button');
+    allButtons.forEach(button => {
+        const productId = button.dataset.productId;
+        if (productId) {
+            updateWishlistIcon(productId, !!userWishlist[productId]);
+        }
+    });
+}
+
+async function showWishlistModal() {
+    if (!currentUser) {
+        openModal('authModal');
+        return;
+    }
+
+    const container = document.getElementById('wishlistItemsContainer');
+    if (!container) return;
+
+    container.innerHTML = ''; // Clear previous items
+    
+    // Get all products that are in the wishlist
+    const wishlistProducts = Object.keys(userWishlist)
+        .filter(productId => allProductsData[productId])
+        .map(productId => allProductsData[productId]);
+
+    if (wishlistProducts.length === 0) {
+        container.innerHTML = '<p class="empty-wishlist">Your wishlist is empty</p>';
+        return;
+    }
+
+    // Display wishlist products
+    wishlistProducts.forEach(product => {
+        const productCard = createProductCard(product);
+        container.appendChild(productCard);
+    });
+
+    openModal('wishlistModal');
+}
+
+// Make wishlist functions globally accessible
+window.toggleWishlist = toggleWishlist;
+window.showWishlistModal = showWishlistModal;
+
+// --- End Wishlist Functions ---
+
+// Create product card (Modified to include wishlist check)
+function createProductCard(product) {
+    const card = document.createElement('a');
+    card.className = 'product-card';
+    card.href = product.productUrl || '#';
+    card.target = '_blank';
+
+    const ratingStars = product.rating ? `${product.rating} <i class="fas fa-star"></i>` : '';
+    const ratingCount = product.ratingCount ? `| ${product.ratingCount}` : '';
+    const originalPriceHTML = product.originalPrice ? `<span class="original-price">₹${product.originalPrice}</span>` : '';
+    const discountPercentageHTML = product.discountPercentage ? `<span class="discount-percentage">${product.discountPercentage}% OFF</span>` : '';
+    const offerTagHTML = product.offerTag ? `<div class="offer-tag">${product.offerTag}</div>` : '';
+    const deliveryInfoHTML = product.deliveryInfo ? `<div class="delivery-info">${product.deliveryInfo}</div>` : '';
+
+    // Determine initial wishlist icon state
+    const isWishlisted = !!userWishlist[product.id];
+    const heartIconClass = isWishlisted ? 'fas fa-heart wishlisted' : 'far fa-heart';
+    
+    card.innerHTML = `
+        <div class="product-image-container">
+            <img src="${product.imageUrl || product.image || 'images/placeholder.png'}" alt="${product.title}" class="product-image">
+            ${product.rating ? `<div class="rating-box">${ratingStars} ${ratingCount}</div>` : ''}
+        </div>
+        <div class="product-info">
+            ${product.brand ? `<h4 class="product-brand">${product.brand}</h4>` : ''}
+                <h3 class="product-title">${product.title}</h3>
+            ${offerTagHTML}
+            <div class="price-container">
+                ${product.discountedPrice ? `<span class="discounted-price">₹${product.discountedPrice}</span>` : ''}
+                ${originalPriceHTML}
+                ${discountPercentageHTML}
+            </div>
+            ${deliveryInfoHTML}
+        </div>
+        <button class="wishlist-button" data-product-id="${product.id}">
+             <i class="${heartIconClass}"></i>
+        </button>
+    `;
+
+    const wishlistButton = card.querySelector('.wishlist-button');
+    wishlistButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleWishlist(product.id); // Pass only the product ID
+    });
+
+    return card;
+}
+
+// Display products
+function displayProducts(products, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || !products) return;
+    
+    container.innerHTML = '';
+    products.forEach(product => {
+        if (product && product.id) { // Ensure product and id exist
+             // Update the global product cache if displaying main products
+             if (container === productsContainer || container === featuredProductsContainer) {
+                  allProductsData[product.id] = product;
+             }
+        const card = createProductCard(product);
+        container.appendChild(card);
+        }
+    });
+}
+
+// Filter products (No changes needed here for wishlist)
+function filterProducts(products) {
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedCategory = categoryFilter.value;
+
+    return products.filter(product => {
+        const titleMatch = product.title?.toLowerCase().includes(searchTerm) || false;
+        const brandMatch = product.brand?.toLowerCase().includes(searchTerm) || false;
+        const descMatch = product.description?.toLowerCase().includes(searchTerm) || false;
+        const categoryMatchFilter = !selectedCategory || product.category === selectedCategory;
+        const categoryMatchSearch = product.category?.toLowerCase().includes(searchTerm) || false;
+        
+        const matchesSearch = !searchTerm || titleMatch || brandMatch || descMatch || categoryMatchSearch;
+        
+        return matchesSearch && categoryMatchFilter;
+    });
+}
+
+// Update product display based on filters
+function updateProductDisplay() {
+    // Use the cached allProductsData for filtering
+    const productsArray = Object.values(allProductsData);
+    const filteredProducts = filterProducts(productsArray);
+        const featuredProducts = filteredProducts.filter(p => p.featured);
+        
+        displayProducts(featuredProducts, 'featuredProductsContainer');
+        displayProducts(productsContainer, 'productsContainer');
+    // Note: No Firebase call here, relies on initial fetch and cache
+}
+
+// Update categories in filter
+function updateCategories(products) {
+    // Filter out potential null/undefined categories before creating Set
+    const categories = [...new Set(products.map(p => p?.category).filter(Boolean))];
+    categoryFilter.innerHTML = `
+        <option value="">All Categories</option>
+        ${categories.map(category => `
+            <option value="${category}">${category}</option>
+        `).join('')}
+    `;
+}
+
+// Theme toggle (no changes needed)
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    localStorage.setItem('darkMode', isDarkMode);
+}
+
+// Initialize page
+function initializePage() {
+    console.log('Initializing page...');
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('darkMode') === 'true';
+    if (savedTheme) {
+        document.body.classList.add('dark-mode');
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    // Set up modal event listeners
+    document.querySelectorAll('[data-modal]').forEach(button => {
+        button.addEventListener('click', () => {
+            const modalId = button.getAttribute('data-modal');
+            closeModal(modalId);
+        });
+    });
+
+    // Set up auth tab event listeners
+    document.querySelectorAll('[data-tab]').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab');
+            if (tabName === 'login') {
+                showLogin();
+            } else if (tabName === 'signup') {
+                showSignup();
+            }
+        });
+    });
+
+    // Set up auth state listener
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('wishlistBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'block';
+            loadWishlist(user.uid);
+        } else {
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('wishlistBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+    });
+
+    // Load products
+    loadProducts();
+
+    // Listen for products changes (Real-time updates)
+    onValue(productsRef, (snapshot) => {
+        console.log('Products updated:', snapshot.val());
+        const productsData = snapshot.val() || {};
+        // Store products in cache
+        allProductsData = productsData;
+        // Convert to array for display
+        const productsArray = Object.keys(productsData).map(key => ({
+            id: key,
+            ...productsData[key]
+        }));
+        
+        updateCategories(productsArray);
+        // Update display with new data
+        const featuredProducts = productsArray.filter(p => p.featured);
+        displayProducts(featuredProducts, 'featuredProductsContainer');
+        displayProducts(productsContainer, 'productsContainer');
+        updateAllWishlistIcons(); // Ensure icons are correct after updates
+
+        // If we're on the wishlist page, update it too
+        if (window.location.pathname.includes('wishlist.html')) {
+            showWishlistModal();
+        }
+    }); // Removed onlyOnce: true to get real-time updates
+
+    // Listen for settings changes (Real-time updates)
+    onValue(settingsRef, (snapshot) => {
+        console.log('Settings updated:', snapshot.val());
+        const settings = snapshot.val() || {
+            sectionVisibility: {
+                featuredProducts: true,
+                allProducts: true
+            }
+        };
+        
+        const featuredSection = document.getElementById('featuredProducts');
+        const allProductsSection = document.getElementById('allProducts');
+        
+        if (featuredSection) {
+            featuredSection.style.display = settings.sectionVisibility.featuredProducts ? 'block' : 'none';
+        }
+        if (allProductsSection) {
+            allProductsSection.style.display = settings.sectionVisibility.allProducts ? 'block' : 'none';
+        }
+    }); // Removed onlyOnce: true to get real-time updates
+
+    // Add event listeners
+    themeToggle.addEventListener('click', toggleTheme);
+    searchInput.addEventListener('input', updateProductDisplay);
+    categoryFilter.addEventListener('change', updateProductDisplay);
+    loginForm.addEventListener('submit', handleLogin);
+    signupForm.addEventListener('submit', handleSignup);
+
+    // Update header button listeners
+    wishlistBtn.addEventListener('click', showWishlistModal);
+    profileBtn.addEventListener('click', () => {
+        if (currentUser) {
+            handleLogout();
+        } else {
+            openModal('authModal');
+            showLogin();
+        }
+    });
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializePage);
+
+// Load products from Firebase
+async function loadProducts() {
+    try {
+        const productsRef = ref(db, 'products');
+        onValue(productsRef, (snapshot) => {
+            const products = [];
+            snapshot.forEach((childSnapshot) => {
+                products.push({
+                    id: childSnapshot.key,
+                    ...childSnapshot.val()
+                });
+            });
+            
+            // Update featured products
+            const featuredProducts = products.filter(p => p.featured);
+            displayProducts(featuredProducts, 'featuredProductsContainer');
+            
+            // Update all products
+            displayProducts(products, 'productsContainer');
+            
+            // Update wishlist icons
+            updateWishlistIcons();
+        });
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+// Update wishlist icons
+function updateWishlistIcons() {
+    updateAllWishlistIcons();
+}
+
+// Wishlist functions
+function loadWishlist(userId) {
+    const wishlistRef = ref(db, `wishlists/${userId}`);
+    onValue(wishlistRef, (snapshot) => {
+        userWishlist = snapshot.val() || {};
+        updateWishlistIcons();
+    });
+}
+
+function toggleWishlist(productId) {
+    const user = auth.currentUser;
+    if (!user) {
+        showModal('authModal');
+        return;
+    }
+
+    const wishlistRef = ref(db, `wishlists/${user.uid}/${productId}`);
+    if (userWishlist[productId]) {
+        remove(wishlistRef);
+        userWishlist[productId] = false;
+    } else {
+        set(wishlistRef, true);
+        userWishlist[productId] = true;
+    }
+    updateWishlistIcons();
+}
+
+function updateWishlistIcons() {
+    document.querySelectorAll('.wishlist-icon').forEach(icon => {
+        const productId = icon.getAttribute('data-product-id');
+        if (userWishlist[productId]) {
+            icon.classList.add('active');
+        } else {
+            icon.classList.remove('active');
+        }
+    });
+}
+
+// Update wishlist
+function updateWishlist(userId, productId, isWishlisted) {
+    toggleWishlist(productId);
+}
+
+// Update wishlist
+function removeWishlist(userId, productId) {
+    toggleWishlist(productId);
+}
+
+// Update wishlist
+function addWishlist(userId, productId) {
+    toggleWishlist(productId);
+}
